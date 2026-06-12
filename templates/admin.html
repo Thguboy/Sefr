@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Admin Panel — CEFR Pro{% endblock %}
+{% block content %}
+<div class="page-header admin-header">
+  <div class="container">
+    <h1><i class="bi bi-gear-fill me-2"></i>Admin Panel</h1>
+    <p>Testlarni boshqarish va yangi testlar qo'shish</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row g-3 mb-4">
+    <div class="col-auto">
+      <a href="{{ url_for('admin_add_reading') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>Yangi Reading test
+      </a>
+    </div>
+    <div class="col-auto">
+      <a href="{{ url_for('admin_add_listening') }}" class="btn btn-warning text-white">
+        <i class="bi bi-plus-circle me-1"></i>Yangi Listening test
+      </a>
+    </div>
+  </div>
+
+  <!-- Reading Tests -->
+  <div class="card mb-4">
+    <div class="card-header"><strong><i class="bi bi-book me-1 text-primary"></i>Reading Testlar</strong></div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>ID</th><th>Nomi</th><th>Daraja</th><th>Vaqt</th><th>Savollar</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for t in reading_tests %}
+            <tr>
+              <td class="text-muted">#{{ t.id }}</td>
+              <td>{{ t.title }}</td>
+              <td><span class="cefr-badge badge-{{ t.level }}">{{ t.level }}</span></td>
+              <td>{{ t.time_limit }} daq</td>
+              <td>{{ t.questions|length }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('admin_delete_reading', test_id=t.id) }}"
+                      onsubmit="return confirm('Rostdan o\'chirmoqchimisiz?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-3">Testlar yo'q</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Listening Tests -->
+  <div class="card">
+    <div class="card-header"><strong><i class="bi bi-headphones me-1 text-warning"></i>Listening Testlar</strong></div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>ID</th><th>Nomi</th><th>Daraja</th><th>Audio</th><th>Maks. tinglash</th><th>Savollar</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for t in listening_tests %}
+            <tr>
+              <td class="text-muted">#{{ t.id }}</td>
+              <td>{{ t.title }}</td>
+              <td><span class="cefr-badge badge-{{ t.level }}">{{ t.level }}</span></td>
+              <td><small class="text-muted">{{ t.audio_file or '—' }}</small></td>
+              <td>{{ t.max_plays }}</td>
+              <td>{{ t.questions|length }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('admin_delete_listening', test_id=t.id) }}"
+                      onsubmit="return confirm('Rostdan o\'chirmoqchimisiz?')">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-3">Testlar yo'q</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

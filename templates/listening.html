@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}{{ test.title }} — Listening{% endblock %}
+{% block content %}
+<div style="background:linear-gradient(135deg,#F59E0B,#D97706);padding:1rem 0;color:white;">
+  <div class="container d-flex justify-content-between align-items-center">
+    <div>
+      <span class="cefr-badge badge-{{ test.level }} me-2">{{ test.level }}</span>
+      <strong>{{ test.title }}</strong>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <span id="timer-display" style="color:white;background:rgba(255,255,255,.2)">
+        <i class="bi bi-clock me-1"></i><span id="time-left">{{ test.time_limit * 60 }}</span>s
+      </span>
+      <a href="{{ url_for('listening_list') }}" class="btn btn-sm btn-light">
+        <i class="bi bi-x-lg"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  <div class="row g-4">
+    <!-- Audio + Transcript -->
+    <div class="col-lg-5">
+      <div class="audio-player-wrapper mb-3 fade-in">
+        <h6 class="fw-bold mb-3"><i class="bi bi-soundwave me-1" style="color:var(--primary)"></i>Audio</h6>
+        <audio id="mainAudio" controls class="w-100" style="border-radius:8px">
+          {% if test.audio_file %}
+          <source src="{{ url_for('static', filename=test.audio_file) }}" type="audio/mpeg">
+          {% endif %}
+          Brauzeringiz audio faylni qo'llab-quvvatlamaydi.
+        </audio>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <span class="play-count-badge">
+            <i class="bi bi-arrow-repeat me-1"></i>Qolgan tinglash: <span id="plays-left">{{ test.max_plays }}</span>/{{ test.max_plays }}
+          </span>
+          <small class="text-muted">Maks. {{ test.max_plays }} marta</small>
+        </div>
+      </div>
+
+      {% if test.transcript %}
+      <div class="card fade-in">
+        <div class="card-header">
+          <button class="btn btn-link text-decoration-none p-0 fw-semibold"
+                  type="button" data-bs-toggle="collapse" data-bs-target="#transcriptCollapse">
+            <i class="bi bi-file-text me-1"></i>Transkript ko'rish
+          </button>
+        </div>
+        <div class="collapse" id="transcriptCollapse">
+          <div class="card-body transcript-box">{{ test.transcript }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Questions -->
+    <div class="col-lg-7">
+      <form method="POST" id="testForm">
+        <input type="hidden" name="time_spent" id="time_spent_input" value="0">
+        <h6 class="fw-bold text-primary mb-3">
+          <i class="bi bi-question-circle me-1"></i>Savollar ({{ questions|length }} ta)
+        </h6>
+        {% for q in questions %}
+        <div class="card question-card mb-3 fade-in" style="animation-delay:{{ loop.index0 * 0.07 }}s">
+          <div class="card-body">
+            <div class="d-flex gap-2 mb-3">
+              <span class="question-number">{{ loop.index }}</span>
+              <span class="fw-semibold">{{ q.question_text }}</span>
+            </div>
+
+            {% if q.q_type == 'mcq' %}
+              {% for opt in q.options_list %}
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="q_{{ q.id }}"
+                       id="q{{ q.id }}_{{ loop.index }}" value="{{ opt }}" required>
+                <label class="form-check-label" for="q{{ q.id }}_{{ loop.index }}">{{ opt }}</label>
+              </div>
+              {% endfor %}
+
+            {% elif q.q_type == 'tf' %}
+              {% for opt in ['True', 'False'] %}
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="q_{{ q.id }}"
+                       id="q{{ q.id }}_{{ loop.index }}" value="{{ opt }}" required>
+                <label class="form-check-label" for="q{{ q.id }}_{{ loop.index }}">{{ opt }}</label>
+              </div>
+              {% endfor %}
+
+            {% elif q.q_type == 'gap' %}
+              <input type="text" name="q_{{ q.id }}" class="form-control"
+                     placeholder="Javobingizni kiriting..." required>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-warning text-white w-100 py-3 fw-bold fs-5">
+          <i class="bi bi-check-circle me-2"></i>Testni yakunlash
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// --- Audio plays limiter ---
+const maxPlays = {{ test.max_plays }};
+let playsLeft = maxPlays;
+const audio = document.getElementById('mainAudio');
+const playsDisplay = document.getElementById('plays-left');
+
+audio.addEventListener('play', () => {
+  if(playsLeft <= 0){
+    audio.pause();
+    audio.currentTime = 0;
+    return;
+  }
+  playsLeft--;
+  playsDisplay.textContent = playsLeft;
+  if(playsLeft <= 0){
+    audio.addEventListener('ended', () => {
+      audio.controls = false; // disable after last play
+    }, {once: true});
+  }
+});
+
+// --- Timer ---
+const totalSecs = {{ test.time_limit * 60 }};
+let remaining = totalSecs, elapsed = 0;
+const display = document.getElementById('time-left');
+const timerEl = document.getElementById('timer-display');
+const spentInput = document.getElementById('time_spent_input');
+
+function fmtTime(s){ const m=Math.floor(s/60),sec=s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; }
+display.textContent = fmtTime(remaining);
+
+const interval = setInterval(() => {
+  remaining--; elapsed++;
+  display.textContent = fmtTime(remaining);
+  spentInput.value = elapsed;
+  if(remaining <= 0){
+    clearInterval(interval);
+    alert("Vaqt tugadi! Test avtomatik yuborilmoqda.");
+    document.getElementById('testForm').submit();
+  }
+}, 1000);
+document.getElementById('testForm').addEventListener('submit', ()=>clearInterval(interval));
+</script>
+{% endblock %}

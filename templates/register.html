@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Ro'yxatdan o'tish — CEFR Pro{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card card p-4 p-md-5 mx-3" style="max-width:480px">
+    <div class="text-center mb-4">
+      <div class="auth-logo"><i class="bi bi-mortarboard-fill me-1" style="color:var(--primary)"></i>CEFR<span style="color:var(--secondary)">Pro</span></div>
+      <p class="text-muted mt-1">Yangi hisob yarating</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register') }}">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">To'liq ism</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+          <input type="text" name="full_name" class="form-control" placeholder="Ismingiz" required>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Username</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-at"></i></span>
+          <input type="text" name="username" class="form-control" placeholder="username" required>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Email</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+          <input type="email" name="email" class="form-control" placeholder="email@example.com" required>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Parol</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input type="password" name="password" id="pwd" class="form-control" placeholder="Kamida 6 ta belgi" required minlength="6">
+          <button class="btn btn-outline-secondary" type="button" onclick="togglePwd()">
+            <i class="bi bi-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+        <i class="bi bi-person-check me-1"></i> Ro'yxatdan o'tish
+      </button>
+    </form>
+    <hr>
+    <p class="text-center text-muted mb-0">
+      Hisobingiz bormi?
+      <a href="{{ url_for('login') }}" style="color:var(--primary);font-weight:600">Kirish</a>
+    </p>
+  </div>
+</div>
+<script>
+function togglePwd(){
+  const p = document.getElementById('pwd');
+  const i = document.getElementById('eyeIcon');
+  p.type = p.type === 'password' ? 'text' : 'password';
+  i.className = p.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+</script>
+{% endblock %}

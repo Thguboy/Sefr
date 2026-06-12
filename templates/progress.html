@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% block title %}Progressim — CEFR Pro{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <h1><i class="bi bi-graph-up-arrow me-2"></i>Mening Progressim</h1>
+        <p>Barcha test natijalaringiz va rivojlanishingiz</p>
+      </div>
+      <div class="col-md-4 text-end d-none d-md-block">
+        <div class="d-flex align-items-center justify-content-end gap-3">
+          <div>
+            <div class="text-white-50 small">Taxminiy daraja</div>
+            <div class="estimated-level-badge badge-{{ estimated }}"
+                 style="font-size:1.8rem;width:80px;height:80px;">{{ estimated }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  <!-- Summary Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card green">
+        <div class="stat-icon"><i class="bi bi-book"></i></div>
+        <div class="stat-label">Reading o'rtacha</div>
+        <div class="stat-value">{{ r_avg }}%</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card amber">
+        <div class="stat-icon"><i class="bi bi-headphones"></i></div>
+        <div class="stat-label">Listening o'rtacha</div>
+        <div class="stat-value">{{ l_avg }}%</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card purple">
+        <div class="stat-icon"><i class="bi bi-list-check"></i></div>
+        <div class="stat-label">Jami urinish</div>
+        <div class="stat-value">{{ attempts|length }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card red">
+        <div class="stat-icon"><i class="bi bi-trophy"></i></div>
+        <div class="stat-label">Taxminiy daraja</div>
+        <div class="stat-value">{{ estimated }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Line Chart: Progress over time -->
+    <div class="col-lg-7">
+      <div class="card chart-card h-100">
+        <div class="card-header"><strong><i class="bi bi-graph-up me-1"></i>Ball o'sishi (vaqt bo'yicha)</strong></div>
+        <div class="card-body">
+          {% if attempts %}
+          <canvas id="lineChart" height="220"></canvas>
+          {% else %}
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-bar-chart" style="font-size:3rem;opacity:.2"></i>
+            <p class="mt-2">Grafik uchun kamida 1 ta test topshiring.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Bar Chart: Reading vs Listening -->
+    <div class="col-lg-5">
+      <div class="card chart-card h-100">
+        <div class="card-header"><strong><i class="bi bi-bar-chart me-1"></i>Reading vs Listening</strong></div>
+        <div class="card-body d-flex flex-column justify-content-center">
+          <canvas id="barChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level Stats -->
+  <div class="card mb-4">
+    <div class="card-header"><strong><i class="bi bi-layers me-1"></i>Daraja bo'yicha statistika</strong></div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for lvl in cefr_levels %}
+        <div class="col-6 col-md-2">
+          <div class="text-center p-3 rounded" style="border:2px solid var(--border)">
+            <span class="cefr-badge badge-{{ lvl }} mb-2 d-block">{{ lvl }}</span>
+            <div class="fw-bold fs-5">{{ level_stats[lvl].avg }}%</div>
+            <small class="text-muted">{{ level_stats[lvl].count }} urinish</small>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- History Table -->
+  <div class="card">
+    <div class="card-header"><strong><i class="bi bi-clock-history me-1"></i>Barcha urinishlar tarixi</strong></div>
+    <div class="card-body p-0">
+      {% if attempts %}
+      <div class="table-responsive">
+        <table class="table table-hover progress-table mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Tur</th>
+              <th>Daraja</th>
+              <th>Ball</th>
+              <th>Foiz</th>
+              <th>Vaqt (daq)</th>
+              <th>Sana</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in attempts|reverse %}
+            <tr>
+              <td class="text-muted">{{ loop.index }}</td>
+              <td>
+                {% if a.test_type == 'reading' %}
+                  <i class="bi bi-book-fill text-primary"></i> Reading
+                {% else %}
+                  <i class="bi bi-headphones text-warning"></i> Listening
+                {% endif %}
+              </td>
+              <td><span class="cefr-badge badge-{{ a.level }}">{{ a.level }}</span></td>
+              <td>{{ a.score }}/{{ a.total }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height:6px">
+                    <div class="progress-bar"
+                         style="width:{{ a.percentage }}%;
+                                background:{% if a.percentage>=75 %}var(--success){% elif a.percentage>=50 %}var(--warning){% else %}var(--danger){% endif %}">
+                    </div>
+                  </div>
+                  <small class="fw-semibold">{{ a.percentage }}%</small>
+                </div>
+              </td>
+              <td class="text-muted">{{ (a.time_spent // 60) if a.time_spent else '—' }}</td>
+              <td class="text-muted small">{{ a.taken_at.strftime('%d %b %Y, %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-clipboard-x" style="font-size:3rem;opacity:.3"></i>
+        <p class="mt-2">Hali test topshirmagansiz.</p>
+        <a href="{{ url_for('reading_list') }}" class="btn btn-primary">Birinchi testni boshlang</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const labels = {{ chart_labels|safe }};
+const data   = {{ chart_data|safe }};
+
+if(labels.length > 0){
+  // Line chart
+  new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets:[{
+        label: 'Ball (%)',
+        data,
+        borderColor: '#4F46E5',
+        backgroundColor: 'rgba(79,70,229,0.08)',
+        borderWidth: 3,
+        pointBackgroundColor: '#4F46E5',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.raw+'%'}} },
+      scales:{
+        y:{ min:0, max:100, ticks:{callback:v=>v+'%'},
+            grid:{color:'rgba(0,0,0,0.05)'} },
+        x:{ grid:{display:false} }
+      }
+    }
+  });
+}
+
+// Bar chart
+new Chart(document.getElementById('barChart'), {
+  type: 'bar',
+  data:{
+    labels: ['Reading', 'Listening'],
+    datasets:[{
+      label: "O'rtacha ball (%)",
+      data: [{{ r_avg }}, {{ l_avg }}],
+      backgroundColor: ['rgba(79,70,229,0.8)', 'rgba(245,158,11,0.8)'],
+      borderRadius: 8,
+      borderSkipped: false
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{ legend:{display:false} },
+    scales:{
+      y:{ min:0, max:100, ticks:{callback:v=>v+'%'}, grid:{color:'rgba(0,0,0,0.05)'} },
+      x:{ grid:{display:false} }
+    }
+  }
+});
+</script>
+{% endblock %}

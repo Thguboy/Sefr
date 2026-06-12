@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Kirish — CEFR Pro{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+  <div class="auth-card card p-4 p-md-5 mx-3">
+    <div class="text-center mb-4">
+      <div class="auth-logo"><i class="bi bi-mortarboard-fill me-1" style="color:var(--primary)"></i>CEFR<span style="color:var(--secondary)">Pro</span></div>
+      <p class="text-muted mt-1">Hisobingizga kiring</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="mb-3">
+        <label class="form-label fw-600">Username</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-person"></i></span>
+          <input type="text" name="username" class="form-control" placeholder="Username kiriting" required>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-600">Parol</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input type="password" name="password" id="pwd" class="form-control" placeholder="Parolni kiriting" required>
+          <button class="btn btn-outline-secondary" type="button" onclick="togglePwd()">
+            <i class="bi bi-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="remember" id="remember">
+        <label class="form-check-label text-muted" for="remember">Meni eslab qol</label>
+      </div>
+      <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Kirish
+      </button>
+    </form>
+    <hr>
+    <p class="text-center text-muted mb-0">
+      Hisobingiz yo'qmi?
+      <a href="{{ url_for('register') }}" style="color:var(--primary);font-weight:600">Ro'yxatdan o'ting</a>
+    </p>
+  </div>
+</div>
+<script>
+function togglePwd(){
+  const p = document.getElementById('pwd');
+  const i = document.getElementById('eyeIcon');
+  p.type = p.type === 'password' ? 'text' : 'password';
+  i.className = p.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+</script>
+{% endblock %}

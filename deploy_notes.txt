@@ -1,0 +1,45 @@
+# CEFR Mock Test Platform — PythonAnywhere Deployment Guide
+
+Ushbu loyihani PythonAnywhere'ga yuklash uchun quyidagi qadamlarni bajaring:
+
+1. KODNI YUKLASH
+   - PythonAnywhere "Dashboard"ga kiring.
+   - "Web" tabiga o'ting va "Add a new web app" bosing.
+   - "Manual configuration"ni tanlang va Python versiyasini tanlang (masalan, 3.10).
+   - "Files" tabida "Sefr" papkasini yarating va barcha fayllarni yuklang yoki "Bash Console"da git clone orqali yuklang.
+
+2. VIRTUALENV YARATISH
+   - Bash Console'da loyiha papkasiga kiring:
+     cd ~/Sefr
+   - Virtualenv yarating:
+     mkvirtualenv --python=/usr/bin/python3.10 sefr-env
+   - Kutubxonalarni o'rnating:
+     pip install -r requirements.txt
+
+3. WSGI FAYLINI SOZLASH
+   - "Web" tabida "Code" bo'limidagi "WSGI configuration file" havolasiga bosing.
+   - Fayl ichidagi hamma narsani o'chirib, quyidagilarni yozing:
+     
+     import sys
+     import os
+     
+     path = '/home/<SizningUsername>/Sefr'
+     if path not in sys.path:
+         sys.path.insert(0, path)
+     
+     from app import app as application
+
+4. STATIC FILES VA ENVIRONMENT
+   - "Web" tabida "Static files" bo'limida:
+     URL: /static/  --> Directory: /home/<User>/Sefr/static
+   - "Environment variables" bo'limida (ixtiyoriy):
+     SECRET_KEY = sizning_maxfiy_kalitingiz
+
+5. DATABASE
+   - app.py fayli ilk marta ishlaganda 'cefr.db'ni avtomatik yaratadi va demo testlarni seed qiladi.
+   - Admin login: username: admin , parol: admin123
+
+6. QAYTA YUKLASH
+   - "Web" tabida eng tepada joylashgan yashil "Reload" tugmasini bosing.
+
+Tayyor! Saytingiz <username>.pythonanywhere.com manzilida ishga tushadi.

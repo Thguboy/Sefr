@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}{{ test.title }} — Reading{% endblock %}
+{% block content %}
+<div style="background:linear-gradient(135deg,var(--primary),var(--primary-dark));padding:1rem 0;color:white;">
+  <div class="container d-flex justify-content-between align-items-center">
+    <div>
+      <span class="cefr-badge badge-{{ test.level }} me-2">{{ test.level }}</span>
+      <strong>{{ test.title }}</strong>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <span id="timer-display"><i class="bi bi-clock me-1"></i><span id="time-left">{{ test.time_limit * 60 }}</span>s</span>
+      <a href="{{ url_for('reading_list') }}" class="btn btn-sm btn-light">
+        <i class="bi bi-x-lg"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  <form method="POST" id="testForm">
+    <input type="hidden" name="time_spent" id="time_spent_input" value="0">
+    <div class="row g-4">
+      <!-- Passage -->
+      <div class="col-lg-5">
+        <div class="passage-box fade-in">
+          <h6 class="fw-bold text-primary mb-3"><i class="bi bi-file-text me-1"></i>Matn</h6>
+          <div style="white-space:pre-wrap;line-height:1.9">{{ test.passage }}</div>
+        </div>
+      </div>
+
+      <!-- Questions -->
+      <div class="col-lg-7">
+        <h6 class="fw-bold text-primary mb-3">
+          <i class="bi bi-question-circle me-1"></i>Savollar ({{ questions|length }} ta)
+        </h6>
+        {% for q in questions %}
+        <div class="card question-card mb-3 fade-in" style="animation-delay:{{ loop.index0 * 0.05 }}s">
+          <div class="card-body">
+            <div class="d-flex gap-2 mb-3">
+              <span class="question-number">{{ loop.index }}</span>
+              <span class="fw-semibold">{{ q.question_text }}</span>
+            </div>
+
+            {% if q.q_type == 'mcq' %}
+              {% for opt in q.options_list %}
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="q_{{ q.id }}"
+                       id="q{{ q.id }}_{{ loop.index }}" value="{{ opt }}" required>
+                <label class="form-check-label" for="q{{ q.id }}_{{ loop.index }}">{{ opt }}</label>
+              </div>
+              {% endfor %}
+
+            {% elif q.q_type == 'tf' %}
+              {% for opt in ['True', 'False'] %}
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="q_{{ q.id }}"
+                       id="q{{ q.id }}_{{ loop.index }}" value="{{ opt }}" required>
+                <label class="form-check-label" for="q{{ q.id }}_{{ loop.index }}">{{ opt }}</label>
+              </div>
+              {% endfor %}
+
+            {% elif q.q_type == 'gap' %}
+              <input type="text" name="q_{{ q.id }}" class="form-control"
+                     placeholder="Javobingizni kiriting..." required>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold fs-5">
+          <i class="bi bi-check-circle me-2"></i>Testni yakunlash
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const totalSecs = {{ test.time_limit * 60 }};
+let remaining = totalSecs;
+let elapsed = 0;
+const display = document.getElementById('time-left');
+const timerEl = document.getElementById('timer-display');
+const spentInput = document.getElementById('time_spent_input');
+
+function fmtTime(s){
+  const m = Math.floor(s/60), sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+display.textContent = fmtTime(remaining);
+
+const interval = setInterval(() => {
+  remaining--; elapsed++;
+  display.textContent = fmtTime(remaining);
+  spentInput.value = elapsed;
+  if(remaining <= 60) timerEl.className = 'danger';
+  else if(remaining <= 180) timerEl.className = 'warning';
+  if(remaining <= 0){
+    clearInterval(interval);
+    alert("Vaqt tugadi! Test avtomatik yuborilmoqda.");
+    document.getElementById('testForm').submit();
+  }
+}, 1000);
+
+document.getElementById('testForm').addEventListener('submit', () => clearInterval(interval));
+</script>
+{% endblock %}

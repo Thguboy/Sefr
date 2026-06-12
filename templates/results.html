@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block title %}Natija — CEFR Pro{% endblock %}
+{% block content %}
+
+{% set color_map = {'A1':'#22C55E','A2':'#16A34A','B1':'#F59E0B','B2':'#D97706','C1':'#EF4444','C2':'#7C3AED'} %}
+
+<div class="page-header text-center">
+  <div class="container">
+    <h1 class="fade-in">Test Natijasi</h1>
+    <p class="fade-in fade-in-delay-1">
+      {% if attempt.test_type == 'reading' %}<i class="bi bi-book-fill me-1"></i>Reading
+      {% else %}<i class="bi bi-headphones me-1"></i>Listening{% endif %}
+      · <span class="cefr-badge badge-{{ attempt.level }}">{{ attempt.level }}</span>
+    </p>
+  </div>
+</div>
+
+<div class="container pb-5">
+  <div class="row justify-content-center g-4 mt-1">
+
+    <!-- Score Circle -->
+    <div class="col-md-4 text-center">
+      <div class="result-circle mx-auto mb-3"
+           style="--pct:{{ attempt.percentage / 100 * 360 }}deg;
+                  background: conic-gradient({{ color_map.get(band, 'var(--primary)') }} {{ attempt.percentage }}%, #E5E7EB 0%)">
+        <div class="inner">
+          <div class="pct-text" style="color:{{ color_map.get(band,'var(--primary)') }}">{{ attempt.percentage }}%</div>
+          <div class="text-muted small">{{ attempt.score }}/{{ attempt.total }}</div>
+        </div>
+      </div>
+      <div class="card p-3 text-center">
+        <div class="text-muted small mb-1">Ekvivalent CEFR band</div>
+        <div class="estimated-level-badge badge-{{ band }} mx-auto" style="font-size:2rem;width:80px;height:80px;">{{ band }}</div>
+        <p class="mt-2 text-muted small">Bu urinishdagi ball {{ band }} darajasiga to'g'ri keladi</p>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="col-md-5">
+      <div class="card h-100">
+        <div class="card-header"><strong>Batafsil natija</strong></div>
+        <div class="card-body">
+          {% if test %}
+          <div class="mb-3">
+            <small class="text-muted">Test nomi</small>
+            <div class="fw-semibold">{{ test.title }}</div>
+          </div>
+          {% endif %}
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <div class="p-3 rounded text-center" style="background:rgba(79,70,229,.07)">
+                <div class="fs-3 fw-bold text-primary">{{ attempt.score }}</div>
+                <small class="text-muted">To'g'ri javob</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 rounded text-center" style="background:rgba(239,68,68,.07)">
+                <div class="fs-3 fw-bold text-danger">{{ attempt.total - attempt.score }}</div>
+                <small class="text-muted">Noto'g'ri</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+              <small class="text-muted">Umumiy ball</small>
+              <small class="fw-bold">{{ attempt.percentage }}%</small>
+            </div>
+            <div class="progress" style="height:10px;border-radius:5px">
+              <div class="progress-bar" role="progressbar"
+                   style="width:{{ attempt.percentage }}%;
+                          background:{{ color_map.get(band,'var(--primary)') }};
+                          border-radius:5px;transition:width 1s ease">
+              </div>
+            </div>
+          </div>
+
+          {% if attempt.time_spent %}
+          <div class="d-flex justify-content-between text-muted small">
+            <span><i class="bi bi-stopwatch me-1"></i>Sarflangan vaqt</span>
+            <span>{{ (attempt.time_spent // 60) }}:{{ '%02d'|format(attempt.time_spent % 60) }}</span>
+          </div>
+          {% endif %}
+
+          <div class="mt-3 p-3 rounded"
+               style="background:{{ color_map.get(band,'var(--primary)') }}18;border-left:3px solid {{ color_map.get(band,'var(--primary)') }}">
+            {% if attempt.percentage >= 80 %}
+              <strong>Ajoyib natija!</strong> 🎉 Siz {{ band }} darajasini a'lo bajardiniz.
+            {% elif attempt.percentage >= 60 %}
+              <strong>Yaxshi natija!</strong> 👍 {{ band }} darajasida yaxshi ko'rsatkichlar.
+            {% else %}
+              <strong>Davom eting!</strong> 💪 Ko'proq mashq qiling va darajangizni oshiring.
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Actions -->
+  <div class="text-center mt-4 d-flex justify-content-center gap-3 flex-wrap">
+    {% if attempt.test_type == 'reading' %}
+    <a href="{{ url_for('reading_list') }}" class="btn btn-outline-primary">
+      <i class="bi bi-book me-1"></i>Boshqa Reading test
+    </a>
+    {% else %}
+    <a href="{{ url_for('listening_list') }}" class="btn btn-outline-warning">
+      <i class="bi bi-headphones me-1"></i>Boshqa Listening test
+    </a>
+    {% endif %}
+    <a href="{{ url_for('progress') }}" class="btn btn-primary">
+      <i class="bi bi-graph-up-arrow me-1"></i>Progressimni ko'rish
+    </a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-house me-1"></i>Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}
