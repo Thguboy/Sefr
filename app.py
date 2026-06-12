@@ -25,6 +25,26 @@ from sqlalchemy import func
 from models import db, User, ReadingTest, ReadingQuestion, \
                    ListeningTest, ListeningQuestion, TestAttempt, CEFR_LEVELS
 
+# --- ElevenLabs Integration ---
+ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY', 'sk_02c9a29b30c100216bcd9dba85da4292adc650be3f9804e0')
+
+def generate_tts(text, filename):
+    """Generates audio using ElevenLabs and saves to static/audio/."""
+    try:
+        from elevenlabs import generate, save, set_api_key
+        set_api_key(ELEVENLABS_API_KEY)
+        audio = generate(
+            text=text,
+            voice="Bella", # Default voice
+            model="eleven_monolingual_v1"
+        )
+        save_path = os.path.join(app.static_folder, filename)
+        save(audio, save_path)
+        return True
+    except Exception as e:
+        print(f"TTS Error: {e}")
+        return False
+
 # ---------------------------------------------------------------------------
 # App factory
 # ---------------------------------------------------------------------------
@@ -411,19 +431,29 @@ def admin_add_reading():
 @admin_required
 def admin_add_listening():
     if request.method == 'POST':
-        audio_file = request.files.get('audio_file')
+        use_tts = request.form.get('use_tts') == 'on'
+        transcript = request.form.get('transcript', '')
+
         audio_filename = ''
-        if audio_file and audio_file.filename:
-            import werkzeug.utils
-            audio_filename = 'audio/' + werkzeug.utils.secure_filename(audio_file.filename)
-            save_path = os.path.join(app.static_folder, audio_filename)
-            audio_file.save(save_path)
+        if use_tts and transcript:
+            import uuid
+            audio_filename = 'audio/tts_' + str(uuid.uuid4())[:8] + '.mp3'
+            if not generate_tts(transcript, audio_filename):
+                flash('TTS generatsiya qilishda xatolik yuz berdi.', 'danger')
+                audio_filename = '' 
+        else:
+            audio_file = request.files.get('audio_file')
+            if audio_file and audio_file.filename:
+                import werkzeug.utils
+                audio_filename = 'audio/' + werkzeug.utils.secure_filename(audio_file.filename)
+                save_path = os.path.join(app.static_folder, audio_filename)
+                audio_file.save(save_path)
 
         test = ListeningTest(
             title=request.form['title'],
             level=request.form['level'],
             audio_file=audio_filename,
-            transcript=request.form.get('transcript', ''),
+            transcript=transcript,
             max_plays=int(request.form.get('max_plays', 2)),
             time_limit=int(request.form.get('time_limit', 15))
         )

@@ -28,8 +28,14 @@
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold">Audio fayl (MP3)</label>
-          <input type="file" name="audio_file" class="form-control" accept="audio/*">
-          <small class="text-muted">static/audio/ papkasiga saqlanadi</small>
+          <div class="input-group">
+            <input type="file" name="audio_file" class="form-control" accept="audio/*">
+            <div class="input-group-text">
+              <input class="form-check-input mt-0" type="checkbox" name="use_tts" id="useTTS">
+              <label class="form-check-label ms-2 small" for="useTTS">ElevenLabs TTS (matndan)</label>
+            </div>
+          </div>
+          <small class="text-muted">Fayl yuklang yoki transkriptdan ElevenLabs orqali generatsiya qiling.</small>
         </div>
         <div class="mb-4">
           <label class="form-label fw-semibold">Transkript (ixtiyoriy)</label>
