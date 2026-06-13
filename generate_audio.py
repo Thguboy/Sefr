@@ -8,7 +8,7 @@ def create_placeholder():
         b'\x00\x00\x00}\x00\x00\x02\x00\x10\x00data\x00\x00\x00\x00'
     )
     
-    target_dir = r"C:\Users\Администратор\Documents\Sefr\static\audio"
+    target_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "audio")
     if not os.path.exists(target_dir):
         os.makedirs(target_dir, exist_ok=True)
     

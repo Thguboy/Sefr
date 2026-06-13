@@ -14,19 +14,19 @@
 
 import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from flask import (Flask, render_template, redirect, url_for,
                    request, flash, jsonify, abort)
 from flask_login import (LoginManager, login_user, logout_user,
                          login_required, current_user)
-from sqlalchemy import func
+# sqlalchemy.func removed (unused)
 
 from models import db, User, ReadingTest, ReadingQuestion, \
                    ListeningTest, ListeningQuestion, TestAttempt, CEFR_LEVELS
 
 # --- ElevenLabs Integration ---
-ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY', 'sk_02c9a29b30c100216bcd9dba85da4292adc650be3f9804e0')
+ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY', '')  # Set via environment variable
 
 def generate_tts(text, filename):
     """Generates audio using ElevenLabs and saves to static/audio/."""
@@ -50,7 +50,9 @@ def generate_tts(text, filename):
 # ---------------------------------------------------------------------------
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'change-me-in-production-12345')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cefr.db'
+# SQLite DB path resolved relative to this file — works on any machine (local + PythonAnywhere)
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(_BASE_DIR, 'instance', 'cefr.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -63,7 +65,7 @@ login_manager.login_message_category = "warning"
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 # ===========================================================================
@@ -88,7 +90,12 @@ def register():
         user = User(username=username, email=email, full_name=full_name, cefr_level='A1')
         user.set_password(password)
         db.session.add(user)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash('Ro\'yxatdan o\'tishda xatolik yuz berdi. Qayta urinib ko\'ring.', 'danger')
+            return redirect(url_for('register'))
         login_user(user)
         flash('Muvaffaqiyatli ro\'yxatdan o\'tdingiz!', 'success')
         return redirect(url_for('dashboard'))
@@ -178,7 +185,7 @@ def reading_list():
 @app.route('/reading/<int:test_id>', methods=['GET', 'POST'])
 @login_required
 def reading_test(test_id):
-    test = ReadingTest.query.get_or_404(test_id)
+    test = db.get_or_404(ReadingTest, test_id)
     questions = ReadingQuestion.query.filter_by(test_id=test_id)\
         .order_by(ReadingQuestion.order).all()
     for q in questions:
@@ -215,7 +222,12 @@ def reading_test(test_id):
             time_spent=time_spent
         )
         db.session.add(attempt)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash('Natijani saqlashda xatolik yuz berdi.', 'danger')
+            return render_template('reading.html', test=test, questions=questions)
         return redirect(url_for('results', attempt_id=attempt.id))
 
     return render_template('reading.html', test=test, questions=questions)
@@ -240,7 +252,7 @@ def listening_list():
 @app.route('/listening/<int:test_id>', methods=['GET', 'POST'])
 @login_required
 def listening_test(test_id):
-    test = ListeningTest.query.get_or_404(test_id)
+    test = db.get_or_404(ListeningTest, test_id)
     questions = ListeningQuestion.query.filter_by(test_id=test_id)\
         .order_by(ListeningQuestion.order).all()
     for q in questions:
@@ -273,7 +285,12 @@ def listening_test(test_id):
             time_spent=time_spent
         )
         db.session.add(attempt)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash('Natijani saqlashda xatolik yuz berdi.', 'danger')
+            return render_template('listening.html', test=test, questions=questions)
         return redirect(url_for('results', attempt_id=attempt.id))
 
     return render_template('listening.html', test=test, questions=questions)
@@ -286,7 +303,7 @@ def listening_test(test_id):
 @app.route('/results/<int:attempt_id>')
 @login_required
 def results(attempt_id):
-    attempt = TestAttempt.query.get_or_404(attempt_id)
+    attempt = db.get_or_404(TestAttempt, attempt_id)
     if attempt.user_id != current_user.id and not current_user.is_admin:
         abort(403)
 
@@ -307,9 +324,9 @@ def results(attempt_id):
 
     # Retrieve test title
     if attempt.test_type == 'reading':
-        test = ReadingTest.query.get(attempt.test_id)
+        test = db.session.get(ReadingTest, attempt.test_id)
     else:
-        test = ListeningTest.query.get(attempt.test_id)
+        test = db.session.get(ListeningTest, attempt.test_id)
 
     return render_template('results.html', attempt=attempt, band=band, test=test)
 
@@ -420,9 +437,13 @@ def admin_add_reading():
                     order=i
                 )
                 db.session.add(q)
-        db.session.commit()
-        flash('Reading test qo\'shildi!', 'success')
-        return redirect(url_for('admin_panel'))
+        try:
+            db.session.commit()
+            flash('Reading test qo\'shildi!', 'success')
+            return redirect(url_for('admin_panel'))
+        except Exception:
+            db.session.rollback()
+            flash('Test saqlashda xatolik yuz berdi.', 'danger')
     return render_template('admin_add_reading.html', levels=CEFR_LEVELS)
 
 
@@ -478,9 +499,13 @@ def admin_add_listening():
                     order=i
                 )
                 db.session.add(q)
-        db.session.commit()
-        flash('Listening test qo\'shildi!', 'success')
-        return redirect(url_for('admin_panel'))
+        try:
+            db.session.commit()
+            flash('Listening test qo\'shildi!', 'success')
+            return redirect(url_for('admin_panel'))
+        except Exception:
+            db.session.rollback()
+            flash('Test saqlashda xatolik yuz berdi.', 'danger')
     return render_template('admin_add_listening.html', levels=CEFR_LEVELS)
 
 
@@ -488,10 +513,14 @@ def admin_add_listening():
 @login_required
 @admin_required
 def admin_delete_reading(test_id):
-    test = ReadingTest.query.get_or_404(test_id)
-    db.session.delete(test)
-    db.session.commit()
-    flash('Test o\'chirildi.', 'info')
+    test = db.get_or_404(ReadingTest, test_id)
+    try:
+        db.session.delete(test)
+        db.session.commit()
+        flash('Test o\'chirildi.', 'info')
+    except Exception:
+        db.session.rollback()
+        flash('O\'chirishda xatolik yuz berdi.', 'danger')
     return redirect(url_for('admin_panel'))
 
 
@@ -499,10 +528,14 @@ def admin_delete_reading(test_id):
 @login_required
 @admin_required
 def admin_delete_listening(test_id):
-    test = ListeningTest.query.get_or_404(test_id)
-    db.session.delete(test)
-    db.session.commit()
-    flash('Test o\'chirildi.', 'info')
+    test = db.get_or_404(ListeningTest, test_id)
+    try:
+        db.session.delete(test)
+        db.session.commit()
+        flash('Test o\'chirildi.', 'info')
+    except Exception:
+        db.session.rollback()
+        flash('O\'chirishda xatolik yuz berdi.', 'danger')
     return redirect(url_for('admin_panel'))
 
 
@@ -1048,8 +1081,12 @@ with app.app_context():
     db.create_all()
     seed_data()
 
+# WSGI entry point — required by PythonAnywhere WSGI config.
+# In your PythonAnywhere WSGI file use: from app import application
+application = app
+
 if __name__ == '__main__':
     # For local development only.
     # On PythonAnywhere: do NOT use app.run() — the WSGI file handles serving.
-    # Set host='0.0.0.0' and port=5000 only for local LAN testing.
+    # ⚠️  WARNING: debug=True exposes a browser-based debugger — change to False before deploy!
     app.run(debug=True, host='127.0.0.1', port=5000)
