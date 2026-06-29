@@ -1,7 +1,10 @@
 Flask==3.0.2
-Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
-Werkzeug==3.0.1
+Flask-SQLAlchemy==3.1.1
 SQLAlchemy==2.0.27
-elevenlabs==0.2.27
+gunicorn==22.0.0
+pydantic==2.13.4
+requests==2.34.2
 python-dotenv==1.0.1
+websockets==16.0
+elevenlabs==0.2.27
